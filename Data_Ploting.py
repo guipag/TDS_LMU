@@ -77,18 +77,27 @@ class Data_Ploting:
         plt.show()
         return fig
 
-    def PSD(self):
-        F, X = self.sig[0].fft()
-        F, Y = self.sig[1].fft()
-        fig1, ax1 = plt.subplots()
-        ax1.semilogx(F[1:len(F) // 2], np.abs(X[1:len(F) // 2]) ** 2, 'r', label='input')
-        self.decorate(ax1, xlabel="Fréquence (Hz)")
-
-        fig2, ax2 = plt.subplots()
-        ax2.semilogx(F[:len(F) // 2], np.abs(Y[:len(F) // 2]) ** 2, 'b', label='ouput')
-        self.decorate(ax2, xlabel="Fréquence (Hz)")
-        plt.show()
-        return fig1, fig2
+    def PSD(self, voies=0):
+        """
+        Affichage du/des PSD
+        :param voies: (int) numéro de la voie ou (array) listes des voies
+        :return: fig
+        """
+        if len(voies) == 1:
+            F, X = self.sig[voies].fft()
+            fig1, ax1 = plt.figure()
+            ax1.semilogx(F[1:len(F) // 2], np.abs(X[1:len(F) // 2]) ** 2, 'r', label='input')
+            self.decorate(ax1, xlabel="Fréquence (Hz)")
+            plt.show()
+            return fig1
+        else:
+            for i in voies:
+                F, X = self.sig[voies[i]].fft()
+                fig1, ax1 = plt.subplots()
+                ax1.semilogx(F[1:len(F) // 2], np.abs(X[1:len(F) // 2]) ** 2, 'r', label='input')
+                self.decorate(ax1, xlabel="Fréquence (Hz)")
+                plt.show()
+            return fig1
 
     def FRF(self, sigIn=0, sigOut=1):
         F, X = self.sig[sigIn].fft()
