@@ -71,8 +71,8 @@ class Data_Ploting:
 
     def plotTimeValues(self, title="Signaux temporels", xlabel='input', ylabel='ouput', color=['b','r']):
         fig, ax = plt.subplots()
-        ax.plot(self.sig[1].time(), self.sig[1].values(), color[1], label=ylabel)
-        ax.plot(self.sig[0].time(), self.sig[1].values(), color[0], label=xlabel)
+        for i in range(len(self.sig)):
+            ax.plot(self.sig[i].time(), self.sig[i].values(), label=xlabel)
         self.decorate(ax, title=title, xlabel='Time (s)')
         plt.show()
         return fig

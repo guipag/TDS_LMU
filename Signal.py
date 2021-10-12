@@ -2,6 +2,18 @@ import numpy as np
 from scipy import signal
 from scipy.fftpack import fft, ifft
 from math import ceil, log2
+import matplotlib.pyplot as plt
+
+import matplotlib as mpl
+
+plt.close('all')
+
+mpl.rc('lines', linewidth=2)
+mpl.rc('font', size=14)
+mpl.rc('axes', linewidth=1.5, labelsize=14)
+mpl.rc('legend', fontsize=14)
+mpl.rcParams['figure.figsize']=(10,7)
+mpl.rcParams['text.usetex'] = True
 
 class Signal:
     """
@@ -57,6 +69,14 @@ class Signal:
         else:
             R = signal.correlate(self.x)
         return -len(self.x)+1+np.arange(2*len(self.x)-1), 1/self.Fs * R
+
+    def convolve(self, other):
+        """
+        Convolution temporelle entre deux signaux
+        :param other: Signal
+        :return: Signal
+        """
+        return Signal(np.convolve(self.x, other.x)/self.Fs, self.Fs)
 
     def fft(self, Ntfd=None):
         """
@@ -127,4 +147,20 @@ class Signal:
         Y = np.zeros(Fs)
         # ifft avec zero-padding
         return Signal(ifft(Y), Fs)
+
+    @staticmethod
+    def decorate(ax, title=None, xlabel=None, ylabel=None):
+        ax.set_title(title)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.grid()
+        ax.legend()
+        plt.tight_layout()
+
+    def plot(self, title="Signal temporel", xlabel='Temps (s)', ylabel='ouput', color='r'):
+        fig, ax = plt.figure()
+        ax.plot(self.time(), self.values(), color, label=xlabel)
+        self.decorate(ax, title=title, xlabel=xlabel)
+        plt.show()
+        return fig
 
