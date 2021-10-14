@@ -1,15 +1,14 @@
-import numpy as np
 import sounddevice as sd
-import queue as bf
-import Signal as sg
-from math import ceil
-import matplotlib.pyplot as plt
 from Data_Ploting import *
+from signals_generator import tone_bursts
+import numpy as np
 
 class SoundCard:
     def __init__(self):
         self.Fs = 48000
         self.compLat = False
+        self.nbIn = 1
+        self.nbOut = 1
 
     def setFs(self, Fs):
         self.Fs = Fs
@@ -35,24 +34,26 @@ class SoundCard:
             asio_in = sd.AsioSettings(channel_selectors=mapIn)
             sd.default.extra_settings = asio_in, asio_out
             sd.default.channels = len(mapIn), len(mapOut)
+            self.nbIn = len(mapIn)
+            self.nbOut = len(mapOut)
         else:
             asio_out = sd.AsioSettings(channel_selectors=mapOut.append(lbOut))
             asio_in = sd.AsioSettings(channel_selectors=mapIn.append(lbIn))
             sd.default.extra_settings = asio_in, asio_out
             sd.default.channels = len(mapIn)+1, len(mapOut)+1
             self.compLat = True
+            self.nbIn = len(mapIn)+1
+            self.nbOut = len(mapOut)+1
         return self
 
     def mesure(self, out):
         return sd.playrec(out)
 
     def compenseLatency(self):
-        T = 1
-        f0 = 1e3
-
-        t = np.arange(0, T, self.Fs)
-        t_burst = T / 100
-        burst = 0.5 * np.real(np.exp(-(1000 * (t - t_burst))**2 + 1j * 2 * np.pi * f0 * t))
+        sig = tone_bursts(1000,0.9,1,self.Fs)
+        out = np.zeros((self.Fs*1, self.nbOut))
+        out[:,-1] = sig
+        mes = self.mesure(out)
 
 
 if __name__ == "__main__":
