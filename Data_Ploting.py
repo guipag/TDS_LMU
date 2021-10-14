@@ -92,7 +92,7 @@ class Data_Ploting:
             return fig1
         else:
             for i in voies:
-                F, X = self.sig[voies[i]].fft()
+                F, X = self.sig[i].fft()
                 fig1, ax1 = plt.subplots()
                 ax1.semilogx(F[1:len(F) // 2], np.abs(X[1:len(F) // 2]) ** 2, 'r', label='input')
                 self.decorate(ax1, xlabel="Fréquence (Hz)")
