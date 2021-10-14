@@ -22,6 +22,14 @@ class SoundCard:
         sd.default.device = int(input('SC ?'))
 
     def mapping(self, mapIn, mapOut, lbIn=None, lbOut=None):
+        """
+        Paramétrage des I/O de la carte son
+        :param mapIn: (array) liste des entrées à utiliser
+        :param mapOut: (array) liste des sorties à utiliser
+        :param lbIn: (int) entrée loopback
+        :param lbOut: (int) sortie loopback
+        :return: self
+        """
         if lbIn is None and lbOut is None:
             asio_out = sd.AsioSettings(channel_selectors=mapOut)
             asio_in = sd.AsioSettings(channel_selectors=mapIn)
