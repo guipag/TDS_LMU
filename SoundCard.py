@@ -3,12 +3,16 @@ from Data_Ploting import *
 from signals_generator import tone_bursts
 import numpy as np
 
+
 class SoundCard:
     def __init__(self):
         self.Fs = 48000
         self.compLat = False
         self.nbIn = 1
         self.nbOut = 1
+        self.lbIn = None
+        self.lbOut = None
+        self.latLag = 0
 
     def setFs(self, Fs):
         self.Fs = Fs
@@ -44,69 +48,38 @@ class SoundCard:
             self.compLat = True
             self.nbIn = len(mapIn)+1
             self.nbOut = len(mapOut)+1
+            self.lbIn = lbIn
+            self.lbOut = lbOut
         return self
 
     def mesure(self, out):
-        return sd.playrec(out)
+        sig = sd.playrec(out, blocking=True)
+        return np.roll(sig, -self.latLag, axis=1)
 
     def compenseLatency(self):
-        sig = tone_bursts(1000,0.9,1,self.Fs)
+        sig = tone_bursts(1000, 0.9, 1, self.Fs)
         out = np.zeros((self.Fs*1, self.nbOut))
-        out[:,-1] = sig
+        out[:, -1] = sig
         mes = self.mesure(out)
-
+        corr = np.correlate(mes[:, self.lbIn], sig)
+        self.latLag = np.argmax(corr) - len(sig) + 1
+        return self
 
 if __name__ == "__main__":
     HPChirp = Data_Ploting(path='impulseresponse1.wav')
 
-    blocksize = 1024
-
-    # fifo = bf.Queue()
-    # fifo_in = bf.Queue()
-    #
-    # for i in range(ceil(HPChirp.sig[0].N/blocksize)):
-    #     data = HPChirp.sig[0].x[i*blocksize:i*blocksize+blocksize]
-    #     fifo.put_nowait(data)
-    #
-    # def callback(indata, outdata, frames, time, status):
-    #     try:
-    #         data = fifo.get_nowait()
-    #     except bf.Empty as e:
-    #         raise sd.CallbackAbort from e
-    #     if len(data) < len(outdata):
-    #         outdata[:len(data)] = np.expand_dims(data, axis=1)
-    #         outdata[len(data):].fill(0)
-    #         raise sd.CallbackStop
-    #     else:
-    #         outdata[:] = np.expand_dims(data, axis=1)
-    #     fifo_in.put(indata.copy())
-
-
-    # sd.default.device = 10
-    # asio_out = sd.AsioSettings(channel_selectors=[1])
-    # asio_in = sd.AsioSettings(channel_selectors=[1])
-    # sd.default.extra_settings = asio_in, asio_out
-    # sd.default.samplerate = 44100
-    # sd.default.channels = 1
-    #
-    # myrecording = sd.playrec(HPChirp.sig[0].x)
-
-    # with sd.Stream(device=10, channels=(1,2), callback=callback, extra_settings=sd.default.extra_settings, blocksize=blocksize, samplerate=44100):
-    #     print('#' * 80)
-    #     print('press Return to quit')
-    #     print('#' * 80)
-    #     input()
-
     SC = SoundCard()
     SC.setFs(44100)
     SC.SCChoice()
-    SC.mapping([1],[1])
-    myrecording = SC.mesure(HPChirp.sig[0].x)
+    SC.mapping([1,2,3,4,5,6,7,8,9],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+    out = np.zeros((480000, 20))
+    out[:, 1] = HPChirp.sig[0].x
+    myrecording = SC.mesure(out)
 
     sig = sg.Signal(myrecording, 44100)
 
     plt.figure()
-    plt.plot(sig.x)
+    plt.plot(sig.x[:,8])
     plt.show()
     plt.tight_layout()
 
