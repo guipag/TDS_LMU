@@ -1,22 +1,30 @@
 import sounddevice as sd
 from Data_Ploting import *
-from signals_generator import tone_bursts
+from signals_generator import tone_bursts, chirp
 import numpy as np
 
 
 class SoundCard:
     def __init__(self):
-        self.Fs = 48000
+        self.Fs = 44100
         self.compLat = False
         self.nbIn = 1
         self.nbOut = 1
         self.lbIn = None
         self.lbOut = None
-        self.latLag = 0
+        self.__latLag = 0
 
-    def setFs(self, Fs):
-        self.Fs = Fs
-        sd.default.samplerate = Fs
+    @property
+    def Fs(self):
+        return self.__Fs
+
+    @Fs.setter
+    def Fs(self, Fs):
+        if Fs > 0:
+            self.__Fs = Fs
+            sd.default.samplerate = Fs
+        else:
+            raise ValueError('La fréquence d\'échantillonnage doit être positive')
         return self
 
     def SCChoice(self):
@@ -54,7 +62,7 @@ class SoundCard:
 
     def mesure(self, out):
         sig = sd.playrec(out, blocking=True)
-        return np.roll(sig, -self.latLag, axis=1)
+        return np.roll(sig, -self.__latLag, axis=1)
 
     def compenseLatency(self):
         sig = tone_bursts(1000, 0.9, 1, self.Fs)
@@ -62,24 +70,25 @@ class SoundCard:
         out[:, -1] = sig
         mes = self.mesure(out)
         corr = np.correlate(mes[:, self.lbIn], sig)
-        self.latLag = np.argmax(corr) - len(sig) + 1
+        self.__latLag = np.argmax(corr) - len(sig) + 1
         return self
 
+
 if __name__ == "__main__":
-    HPChirp = Data_Ploting(path='impulseresponse1.wav')
+    #HPChirp = Data_Ploting(path='impulseresponse1.wav')
 
     SC = SoundCard()
-    SC.setFs(44100)
+    SC.Fs = 44100
     SC.SCChoice()
-    SC.mapping([1,2,3,4,5,6,7,8,9],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
-    out = np.zeros((480000, 20))
-    out[:, 1] = HPChirp.sig[0].x
+    SC.mapping([x+1 for x in range(1)], [x+1 for x in range(1)])
+    out = np.zeros((88200, 1))
+    out[:, 0] = chirp(20, 1000, 2, 44100).x
     myrecording = SC.mesure(out)
 
     sig = sg.Signal(myrecording, 44100)
 
     plt.figure()
-    plt.plot(sig.x[:,8])
+    plt.plot(sig.x)
     plt.show()
     plt.tight_layout()
 
