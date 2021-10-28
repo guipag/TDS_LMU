@@ -1,12 +1,15 @@
 import numpy as np
 import SoundCard as sc
 from signals_generator import chirp
+import ImpulseResponse as ri
+from scipy.fftpack import fft, ifft
+
 
 class System:
     def __init__(self, nbIn, nbOut):
         self.nbIn = nbIn
         self.nbOut = nbOut
-        self.H = np.zeros((nbIn, nbOut))
+        self.H = np.array((nbIn, nbOut))
         self.__Fs = 44100
         self.__Fmin = 10
         self.__Fmax = 100
@@ -54,9 +57,9 @@ class System:
         else:
             raise ValueError('Fmin doit être plus petit que Fmax et Fmax doit être plus petit que Fs/2')
 
-    def routing(self):
+    def routing(self, inp, out):
         self.SC.Fs = self.__Fs
-        self.SC.mapping()
+        self.SC.mapping(inp, out)
         return self
 
     def mesure(self):
@@ -65,9 +68,15 @@ class System:
                 out = np.zeros((self.__Fs*2, self.nbOut))
                 out[:, noOut] = chirp(self.__Fmin, self.__Fmax, 2, self.__Fs).x
                 rec = self.SC.mesure(out)
+                F, X = out[noOut].fft()
+                F, Y = rec[noIn].fft()
+                h = ifft(Y / X)
+                self.H[noIn][noOut] = ri.ImpulseResponse(h, len(h), self.Fs)
 
-
-if "__main__" == __name__:
+if __name__ == "__main__":
     sys = System(12, 1)
     sys.Fs = 44100
     sys.Frange(100, 10000)
+
+    sys.routing([x+1 for x in range(12)], [9])
+    sys.mesure()

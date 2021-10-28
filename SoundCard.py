@@ -2,6 +2,7 @@ import sounddevice as sd
 from Data_Ploting import *
 from signals_generator import tone_bursts, chirp
 import numpy as np
+from Signal import *
 
 
 class SoundCard:
@@ -62,7 +63,8 @@ class SoundCard:
 
     def mesure(self, out):
         sig = sd.playrec(out, blocking=True)
-        return np.roll(sig, -self.__latLag, axis=1)
+        sig = np.roll(sig, -self.__latLag, axis=1)
+        return [Signal(sig[x, :], self.Fs) for x in range(len(sig))]
 
     def compenseLatency(self):
         sig = tone_bursts(1000, 0.9, 1, self.Fs)
