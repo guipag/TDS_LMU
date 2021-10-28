@@ -15,6 +15,8 @@ class System:
         self.__Fmax = 100
         self.SC = sc.SoundCard()
 
+
+
     @property
     def Fs(self):
         return self.__Fs
