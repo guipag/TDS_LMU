@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import signal
-from scipy.fftpack import fft, ifft
+from scipy.fftpack import fft, ifft, rfft, irfft
 from math import ceil, log2
 import matplotlib.pyplot as plt
 
@@ -14,6 +14,7 @@ mpl.rc('axes', linewidth=1.5, labelsize=14)
 mpl.rc('legend', fontsize=14)
 mpl.rcParams['figure.figsize']=(10,7)
 mpl.rcParams['text.usetex'] = True
+
 
 class Signal:
     """
@@ -42,7 +43,12 @@ class Signal:
         :param other: Signal à ajouter
         :return: Signal étant la somme des signaux
         """
-        return Signal(self.x + other.x, self.Fs)
+        if len(self) != len(other):
+            raise('Les dimensions ne correspondent pas')
+        if self.Fs != other.Fs:
+            return Signal(self.x + other.resample(self.Fs).x, self.Fs)
+        else:
+            return Signal(self.x + other.x, self.Fs)
 
     def __sub__(self, other):
         """
@@ -50,25 +56,36 @@ class Signal:
         :param other: Signal à soustraire
         :return: Signal étant la soustraction des deux signaux
         """
-        return Signal(self.x - other.x, self.Fs)
+        if len(self) != len(other):
+            raise('Les dimensions ne correspondent pas')
+        if self.Fs != other.Fs:
+            return Signal(self.x - other.resample(self.Fs).x, self.Fs)
+        else:
+            return Signal(self.x - other.x, self.Fs)
 
     def __mul__(self, other):
-        if len(self) == len(other):
-            return Signal(self.x * other.x, self.Fs)
-        else:
+        if len(self) != len(other):
             raise('Les dimensions ne correspondent pas')
+        if self.Fs != other.Fs:
+            return Signal(self.x * other.resample(self.Fs).x, self.Fs)
+        else:
+            return Signal(self.x * other.x, self.Fs)
 
-    def correlate(self, y=None):
+    def correlate(self, other=None):
         """
         Fonction de corrélation (inter si y != Null, auto sinon)
         :param y: Signal pour l'intercorrélation
         :return:
         """
-        if y is not None:
-            R = signal.correlate(self.x, y)
+        if other is not None:
+            if self.Fs != other.Fs:
+                R = signal.correlate(self.x, other.resample(self.Fs).x)
+            else:
+                R = signal.correlate(self.x, other.x)
+            return -len(self.x) + 1 + np.arange(2 * len(self.x) - 1), 1 / self.Fs * R
         else:
             R = signal.correlate(self.x)
-        return -len(self.x)+1+np.arange(2*len(self.x)-1), 1/self.Fs * R
+            return -len(self.x)+1+np.arange(2*len(self.x)-1), 1/self.Fs * R
 
     def convolve(self, other):
         """
@@ -76,7 +93,10 @@ class Signal:
         :param other: Signal
         :return: Signal
         """
-        return Signal(np.convolve(self.x, other.x)/self.Fs, self.Fs)
+        if self.Fs != other.Fs:
+            return Signal(np.convolve(self.x, other.resample(self.Fs).x)/self.Fs, self.Fs)
+        else:
+            return Signal(np.convolve(self.x, other.x) / self.Fs, self.Fs)
 
     def fft(self, Ntfd=None):
         """
@@ -144,9 +164,29 @@ class Signal:
         :param Fs: Nouvelle fréquence d'échantillonnage
         :return: Signal à la nouvelle fréquence d'échantillonnage
         """
-        Y = np.zeros(Fs)
-        # ifft avec zero-padding
-        return Signal(ifft(Y), Fs)
+        Nx = self.x.shape[0]
+        X = rfft(self.x)
+        newshape = list(self.x.shape)
+        newshape[0] = Fs // 2 + 1
+        Y = np.zeros(Fs, X.dtype)
+
+        N = min(Fs, Nx)
+        nyq = N // 2 + 1  # Slice index that includes Nyquist if present
+        sl = [slice(None)] * self.x.ndim
+        sl[0] = slice(0, nyq)
+        Y[tuple(sl)] = X[tuple(sl)]
+
+        if Fs < self.Fs:
+            sl[0] = slice(N // 2, N // 2 + 1)
+            Y[tuple(sl)] *= 2.
+        else:
+            sl[0] = slice(N // 2, N // 2 + 1)
+            Y[tuple(sl)] *= 0.5
+
+        y = irfft(Y)
+        y *= (float(Fs) / float(Nx))
+
+        return Signal(y, Fs)
 
     @staticmethod
     def decorate(ax, title=None, xlabel=None, ylabel=None):
@@ -158,9 +198,18 @@ class Signal:
         plt.tight_layout()
 
     def plot(self, title="Signal temporel", xlabel='Temps (s)', ylabel='ouput', color='r'):
-        fig, ax = plt.figure()
-        ax.plot(self.time(), self.values(), color, label=xlabel)
-        self.decorate(ax, title=title, xlabel=xlabel)
+        plt.figure()
+        plt.stem(self.time(), self.values(), color, label=xlabel)
+        #self.decorate(fig, title=title, xlabel=xlabel)
         plt.show()
-        return fig
+        #return fig
 
+
+if __name__ == "__main__":
+    n = np.arange(1024)
+    x = 0.9*np.sin(2*np.pi*10*n/1000)
+    sig = Signal(x, 1000)
+    sig.plot()
+
+    sig2 = sig.resample(500)
+    sig2.plot()
