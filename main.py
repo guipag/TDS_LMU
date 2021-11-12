@@ -27,7 +27,7 @@ HPChirp.plotTimeValues()
 
 #HPChirp.PSD()
 #fig_FRF = HPChirp.FRF(1, 0)
-#HPChirp.ImpulseResponse()
+HPChirp.ImpulseResponse()
 
 #fig_FRF.savefig("fig_FRF.png")
 

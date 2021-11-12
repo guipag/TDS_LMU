@@ -15,8 +15,6 @@ class System:
         self.__Fmax = 100
         self.SC = sc.SoundCard()
 
-
-
     @property
     def Fs(self):
         return self.__Fs
@@ -75,6 +73,7 @@ class System:
                 h = ifft(Y / X)
                 self.H[noIn][noOut] = ri.ImpulseResponse(h, len(h), self.Fs)
 
+
 if __name__ == "__main__":
     sys = System(12, 1)
     sys.Fs = 44100
@@ -82,3 +81,4 @@ if __name__ == "__main__":
 
     sys.routing([x+1 for x in range(12)], [9])
     sys.mesure()
+

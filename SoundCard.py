@@ -64,7 +64,8 @@ class SoundCard:
     def mesure(self, out):
         sig = sd.playrec(out, blocking=True)
         sig = np.roll(sig, -self.__latLag, axis=1)
-        return [Signal(sig[x, :], self.Fs) for x in range(len(sig))]
+        #return [Signal(sig[x, :], self.Fs) for x in range(len(sig))]
+        return sig
 
     def compenseLatency(self):
         sig = tone_bursts(1000, 0.9, 1, self.Fs)
@@ -80,17 +81,17 @@ if __name__ == "__main__":
     #HPChirp = Data_Ploting(path='impulseresponse1.wav')
 
     SC = SoundCard()
-    SC.Fs = 44100
+    SC.Fs = 48000
     SC.SCChoice()
-    SC.mapping([x+1 for x in range(1)], [x+1 for x in range(1)])
-    out = np.zeros((88200, 1))
-    out[:, 0] = chirp(20, 1000, 2, 44100).x
+    SC.mapping([x+1 for x in range(18)], [x+1 for x in range(8)])
+    out = np.zeros((96000, 8))
+    out[:, 7] = chirp(20, 1000, 2, 48000).x
     myrecording = SC.mesure(out)
 
-    sig = sg.Signal(myrecording, 44100)
+    sig = sg.Signal(myrecording, 48000)
 
     plt.figure()
-    plt.plot(sig.x)
+    plt.plot(myrecording[:,4])
     plt.show()
     plt.tight_layout()
 
